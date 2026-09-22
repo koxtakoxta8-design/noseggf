@@ -8,48 +8,6 @@ local workspaceService = game:GetService('Workspace')
 local userInputService = game:GetService('UserInputService')
 local tweenService = game:GetService('TweenService')
 local guiService = game:GetService('GuiService')
-
--- KOXTA: boton independiente creado al inicio para que SIEMPRE sea visible.
-do
-    local function __koxta_parent()
-        if gethui then
-            local ok, h = pcall(gethui)
-            if ok and typeof(h) == 'Instance' then return h end
-        end
-        return game:GetService('CoreGui')
-    end
-    local __parent = __koxta_parent()
-    pcall(function()
-        for _, g in ipairs(__parent:GetChildren()) do
-            if g:IsA('ScreenGui') and (g.Name == 'KOXTA' or g.Name == 'hub') then g:Destroy() end
-        end
-    end)
-    local __gui = Instance.new('ScreenGui')
-    __gui.Name = 'KOXTA'
-    __gui.ResetOnSpawn = false
-    __gui.IgnoreGuiInset = true
-    __gui.DisplayOrder = 2147483647
-    __gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    __gui.Parent = __parent
-    local __btn = Instance.new('TextButton')
-    __btn.Name = 'KOXTA_TP'
-    __btn.Size = UDim2.fromOffset(250, 58)
-    __btn.Position = UDim2.new(0.5, -125, 0, 75)
-    __btn.BackgroundColor3 = Color3.fromRGB(8,8,8)
-    __btn.BorderSizePixel = 0
-    __btn.Text = 'KOXTA  •  TP AL MEJOR'
-    __btn.TextColor3 = Color3.new(1,1,1)
-    __btn.TextSize = 16
-    __btn.Font = Enum.Font.GothamBold
-    __btn.Active = true
-    __btn.AutoButtonColor = true
-    __btn.ZIndex = 999999
-    __btn.Parent = __gui
-    local __corner = Instance.new('UICorner'); __corner.CornerRadius = UDim.new(0,10); __corner.Parent = __btn
-    local __stroke = Instance.new('UIStroke'); __stroke.Color = Color3.fromRGB(255,45,65); __stroke.Thickness = 2; __stroke.Parent = __btn
-    _G.__KOXTA_BUTTON = __btn
-    _G.__KOXTA_GUI = __gui
-end
 local httpService = game:GetService('HttpService')
 local teleportService = game:GetService('TeleportService')
 local v1 = {
@@ -15800,12 +15758,30 @@ do
                 return false, 'alvo nao carregou: ' .. tostring(v343)
             end
 
-            -- CAMBIO: misma mecanica de TP + agarre, pero aqui termina.
-            -- No entrega, no AutoPlace y no inicia otro ciclo.
-            v52.Running = false
-            v51.Enabled = false
-            v257.abort = true
-            f7('peguei o melhor ovo; ciclo encerrado')
+            local deliverFallback = v57.SafeSpot() or v57.DeliverFallback
+            local v346, v347 = v257.To(deliverFallback, (v51.DeliverRadius or 8) + 4, v51.MaxTravelTime)
+
+            if not v346 and v347 == 'cancelado' then
+                return false, 'farm desligado com o ovo na mao'
+            end
+
+            local v348 = f22(function()
+                return v60.Soltos > soltos
+            end, v51.ClaimWait)
+            local stage = 'ovo:claim=' .. tostring(v348)
+
+            v52.Stage = stage
+            v95[#v95 + 1] = stage
+
+            if #v95 > 24 then
+                table.remove(v95, 1)
+            end
+            if v348 then
+                v60.LastClaimAt = os.clock()
+            end
+            if not v348 then
+                return false, 'deposito nao confirmou, o ovo esta na mao'
+            end
 
             return true, 'ok'
         end
@@ -18041,6 +18017,7 @@ do
 
             f8('target: %s (%s) at %d studs', info3.name, info3.rarity, f5(v603.dist))
             f7('alvo %s [%s] esc=%.2f mut=%d area=%s', info3.name, info3.rarity, rec.AssetScale or 1, f5((tonumber(v603.muts))), (tostring(rec.AreaId)))
+            task.wait(2)
 
             v52.Stage = 'sair-da-esteira'
             v95[#v95 + 1] = 'sair-da-esteira'
@@ -18146,11 +18123,8 @@ do
                     end
                 end
                 if (v615 or 0) > 0 then
-                    -- CAMBIO: despues de agarrar el mejor huevo, se detiene todo.
-                    f7('TP al mejor huevo + agarre completado; detenido')
-                    v52.Running = false
-                    v51.Enabled = false
-                    v257.abort = true
+                    f7('entregue por TP: %d ovo(s) numa janela (parou em: %s)', v615, (tostring(v616)))
+                    v45.AutoPlaceDepoisDaEntrega(true)
 
                     return
                 end
@@ -18749,7 +18723,140 @@ do
             v51.Enabled = false
             v257.abort = true
 
-            f8('idle')
+            
+
+-- ============================================================
+-- MINIMAL AUTO STEAL EGG BUTTON
+-- The original farm/target/carry/deliver mechanics are preserved.
+-- Only the visible interface is replaced by this single button.
+-- ============================================================
+pcall(function()
+    -- Hide the original interface elements while keeping their logic alive.
+    pcall(function() if v45.TopNotice then v45.TopNotice.Enabled = false end end)
+    pcall(function() if v76 and v76.Gui then v76.Gui.Enabled = false end end)
+    pcall(function() if v77 then v77.Enabled = false end end)
+
+    local parent = nil
+    pcall(function()
+        if gethui then
+            local ok, gui = pcall(gethui)
+            if ok and typeof(gui) == 'Instance' then parent = gui end
+        end
+    end)
+    if not parent then
+        parent = localPlayer:WaitForChild('PlayerGui')
+    end
+
+    local old = parent:FindFirstChild('AutoStealEggButton')
+    if old then old:Destroy() end
+
+    local gui = Instance.new('ScreenGui')
+    gui.Name = 'AutoStealEggButton'
+    gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.DisplayOrder = 999999
+    gui.Parent = parent
+
+    local button = Instance.new('TextButton')
+    button.Name = 'Toggle'
+    button.Size = UDim2.fromOffset(150, 48)
+    button.Position = UDim2.new(1, -165, 0, 90)
+    button.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    button.BackgroundTransparency = 0.08
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 15
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Text = '🥚  AUTO STEAL: OFF'
+    button.Parent = gui
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = button
+
+    local stroke = Instance.new('UIStroke')
+    stroke.Thickness = 1.5
+    stroke.Color = Color3.fromRGB(255, 55, 75)
+    stroke.Transparency = 0.15
+    stroke.Parent = button
+
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = button.Position
+            dragInput = input
+        end
+    end)
+
+    button.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    game:GetService('UserInputService').InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            local delta = input.Position - dragStart
+            button.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    game:GetService('UserInputService').InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    local suppressClick = false
+    local downAt = 0
+
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            downAt = os.clock()
+        end
+    end)
+
+    button.Activated:Connect(function()
+        if os.clock() - downAt > 0.35 then
+            return
+        end
+        pcall(function()
+            v45.Toggle()
+        end)
+    end)
+
+    table.insert(v52.Conns, v46.Heartbeat:Connect(function()
+        if not button.Parent then return end
+        local running = v52.Running == true
+        if running then
+            button.Text = '🥚  AUTO STEAL: ON'
+            button.BackgroundColor3 = Color3.fromRGB(20, 95, 55)
+            stroke.Color = Color3.fromRGB(50, 255, 150)
+        else
+            button.Text = '🥚  AUTO STEAL: OFF'
+            button.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+            stroke.Color = Color3.fromRGB(255, 55, 75)
+        end
+    end))
+
+    button.MouseEnter:Connect(function()
+        button.BackgroundTransparency = 0
+    end)
+    button.MouseLeave:Connect(function()
+        button.BackgroundTransparency = 0.08
+    end)
+end)
+
+f8('idle')
             f7('farm parado')
 
             local character35 = localPlayer.Character
@@ -21734,8 +21841,9 @@ table.insert(v52.Conns, v48.InputBegan:Connect(function(input7, p166)
 
         return
     end
-    -- KOXTA SOLO: no permitir que el hotkey original inicie el farm.
-    -- El flujo se ejecuta unicamente desde el boton KOXTA.
+    if input7.KeyCode == Enum.KeyCode.RightShift then
+        v45.Toggle()
+    end
 end))
 
 function v45.Destroy()
@@ -21827,197 +21935,4 @@ end
 pcall(print, f4('[hub] build %s carregado \183 %d bichos \183 entrega em (%.1f, %.1f, %.1f)', tostring(v45.Build), #v58.All(), v57.DeliverPos().X, v57.DeliverPos().Y, v57.DeliverPos().Z))
 f8('idle')
 
--- KOXTA: UNA SOLA INTERFAZ Y UN SOLO BOTON.
-do
-    local function getParent()
-        if gethui then
-            local ok, h = pcall(gethui)
-            if ok and typeof(h) == 'Instance' then
-                return h
-            end
-        end
-        return game:GetService('CoreGui')
-    end
-
-    local parent = getParent()
-
-    -- Reutilizar el boton creado al inicio; no destruirlo aqui.
-    for _, obj in ipairs(parent:GetChildren()) do
-        if obj:IsA('ScreenGui') and obj.Name == 'hub' then
-            pcall(function() obj:Destroy() end)
-        end
-    end
-
-    pcall(function()
-        local pg = localPlayer:FindFirstChildOfClass('PlayerGui')
-        if pg then
-            for _, obj in ipairs(pg:GetChildren()) do
-                if obj:IsA('ScreenGui') and (obj.Name == 'hub' or obj.Name == 'KOXTA') then
-                    pcall(function() obj:Destroy() end)
-                end
-            end
-        end
-    end)
-
-    -- Estado limpio: el farm original queda apagado.
-    v52.Running = false
-    v51.Enabled = false
-    v257.abort = true
-    v52.ManualTarget = nil
-    v52.Target = nil
-
-    local gui = _G.__KOXTA_GUI
-    local button = _G.__KOXTA_BUTTON
-    if not gui or not gui.Parent or not button or not button.Parent then
-        error('no se pudo crear el boton KOXTA')
-    end
-    button.Text = 'KOXTA  •  TP AL MEJOR'
-    button.Visible = true
-    button.Active = true
-    button.ZIndex = 999999
-
-    local busy = false
-
-    local function setButton(textValue, active)
-        if button and button.Parent then
-            button.Text = textValue
-            button.Active = active
-            button.AutoButtonColor = active
-        end
-    end
-
-    local function isFirstArea(rec)
-        if type(rec) ~= 'table' or not rec.Uid then
-            return false
-        end
-        local ok, result = pcall(v96.LooksLikeFirstAreaUid, rec.Uid)
-        return ok and result == true
-    end
-
-    local function getBestEgg()
-        local best
-
-        -- Usar exactamente el ranking del hub.
-        local okBest, result = pcall(v60.Best)
-        if okBest then
-            best = result
-        end
-
-        -- Nunca aceptar el huevo de la primera zona como "mejor".
-        if best and best.rec and isFirstArea(best.rec) then
-            best = nil
-        end
-
-        -- Respaldo: buscar entre los primeros puestos del ranking.
-        if not best then
-            local okRanked, ranked = pcall(v60.Ranked, 20)
-            if okRanked and type(ranked) == 'table' then
-                for _, candidate in ipairs(ranked) do
-                    local rec = candidate and candidate.rec
-                    if rec
-                        and rec.Uid
-                        and rec.BottomCFrame
-                        and rec.CarrierUserId == nil
-                        and not isFirstArea(rec) then
-                        best = candidate
-                        break
-                    end
-                end
-            end
-        end
-
-        if not best or not best.rec or not best.rec.BottomCFrame then
-            return nil, 'no encontro un huevo valido fuera de la primera zona'
-        end
-
-        return best
-    end
-
-    local function RunKOXTA()
-        if busy then
-            return
-        end
-
-        busy = true
-        setButton('KOXTA  •  ABRIENDO VENTANA...', false)
-
-        task.spawn(function()
-            local ok, err = xpcall(function()
-                -- Asegurar que el farm integrado NO pueda tomar el control.
-                v52.Running = false
-                v51.Enabled = true
-                v51.Blink = true
-                v51.BlinkMinDistance = 0
-                v257.abort = false
-
-                -- 1) Ticket/peor huevo -> abrir la ventana de blink.
-                local okWindow, opened, windowErr = pcall(v67.OpenWindow)
-                if not okWindow or opened ~= true then
-                    error('no pudo abrir la ventana: ' .. tostring(windowErr or opened))
-                end
-
-                setButton('KOXTA  •  BUSCANDO MEJOR...', false)
-
-                -- 2) Mejor huevo usando el ranking existente.
-                local best, bestErr = getBestEgg()
-                if not best then
-                    error(bestErr or 'no encontro el mejor huevo')
-                end
-
-                v52.Target = best
-
-                local bestName = tostring(
-                    (best.info and best.info.name)
-                    or best.rec.AssetCategory
-                    or best.rec.Uid
-                )
-
-                f7('KOXTA: TP al mejor -> %s', bestName)
-                setButton('KOXTA  •  TP AL MEJOR...', false)
-
-                -- 3) TP + agarre. FetchOne termina inmediatamente despues
-                --    de confirmar CarryFieldEgg; NO entrega, NO AutoPlace,
-                --    NO Start, NO siguiente ciclo.
-                local okFetch, fetched, fetchErr = pcall(v67.FetchOne, best.rec)
-
-                if not okFetch then
-                    error('error en TP/agarre: ' .. tostring(fetched))
-                end
-
-                if not fetched then
-                    error('no agarro el mejor huevo: ' .. tostring(fetchErr))
-                end
-
-                -- 4) Queda detenido despues del agarre confirmado.
-                v52.Running = false
-                v51.Enabled = false
-                v257.abort = true
-                pcall(v67.CloseWindow)
-
-                setButton('KOXTA  •  MEJOR AGARRADO ✓', true)
-                busy = false
-            end, function(e)
-                return tostring(e)
-            end)
-
-            if not ok then
-                f7('KOXTA ERROR: %s', tostring(err))
-                v52.Running = false
-                v51.Enabled = false
-                v257.abort = true
-                pcall(v67.CloseWindow)
-                setButton('KOXTA  •  REINTENTAR', true)
-                busy = false
-            end
-        end)
-    end
-
-    -- Un solo punto de entrada.
-    pcall(function()
-        button.Activated:Connect(RunKOXTA)
-    end)
-
-    pcall(function()
-        button.MouseButton1Click:Connect(RunKOXTA)
-    end)
 end
