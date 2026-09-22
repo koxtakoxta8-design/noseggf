@@ -19326,7 +19326,6 @@ do
             return
         end
 
-        v45.Start()
     end
 
     v74 = {
