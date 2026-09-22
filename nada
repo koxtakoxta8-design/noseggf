@@ -18188,6 +18188,15 @@ do
                 return
             end
 
+            -- MODO: IR AL MEJOR HUEVO Y QUEDARSE AHI.
+            -- Se conserva toda la mecanica anterior (seleccion del mejor huevo,
+            -- salir de la zona, TP encadenado, cruce y desplazamiento hasta el huevo).
+            -- Al llegar al huevo se detiene el ciclo ANTES de activar carry/claim/regreso.
+            v52.Stage = 'llego-al-mejor-huevo'
+            f7('llegue al mejor huevo: %s [%s] -- deteniendo aqui', info3.name, info3.rarity)
+            v45.Stop()
+            return
+
             local v628, v629, v630 = pcall(f18, nil, nil, nil)
 
             if not v628 then
