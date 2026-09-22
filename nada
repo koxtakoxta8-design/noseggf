@@ -16343,7 +16343,8 @@ do
             v52.Running = false
             v51.Enabled = false
             v257.abort = true
-            f7('peguei o melhor ovo; FIN')
+            f7('peguei o melhor ovo; iniciando secuencia')
+            task.spawn(StartSequence)
 
             return true, 'ok'
         end
@@ -22448,6 +22449,8 @@ do
             if not okWindow or windowOpened ~= true then
                 f7('KOXTA: no pudo abrir la ventana: %s', tostring(windowErr or windowOpened))
                 button.Text = 'KOXTA  •  TP AL MEJOR'
+                button.Active = true
+                button.AutoButtonColor = true
                 busy = false
                 return
             end
@@ -22486,12 +22489,20 @@ do
                 f7('KOXTA: no encontro el mejor huevo')
                 pcall(v67.CloseWindow)
                 button.Text = 'KOXTA  •  TP AL MEJOR'
+                button.Active = true
+                button.AutoButtonColor = true
                 busy = false
                 return
             end
 
             v52.Target = best
             f7('KOXTA: TP al mejor -> %s', tostring(best.info and best.info.name or best.rec.AssetCategory))
+
+            -- Desde este punto el boton queda desactivado:
+            -- ya se encontro el mejor huevo y comienza su TP/agarre.
+            button.Active = false
+            button.AutoButtonColor = false
+            button.Text = 'KOXTA  •  TP AL MEJOR ✓'
 
             -- FetchOne hace el TP y solo despues de confirmar el agarre llama StartSequence.
             local okFetch, fetched, fetchErr = pcall(v67.FetchOne, best.rec)
@@ -22500,7 +22511,11 @@ do
                 pcall(v67.CloseWindow)
             end
 
-            button.Text = 'KOXTA  •  TP AL MEJOR'
+            if not fetched then
+                button.Text = 'KOXTA  •  TP AL MEJOR'
+                button.Active = true
+                button.AutoButtonColor = true
+            end
             busy = false
         end)
     end)
