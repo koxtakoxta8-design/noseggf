@@ -8,6 +8,48 @@ local workspaceService = game:GetService('Workspace')
 local userInputService = game:GetService('UserInputService')
 local tweenService = game:GetService('TweenService')
 local guiService = game:GetService('GuiService')
+
+-- KOXTA: boton independiente creado al inicio para que SIEMPRE sea visible.
+do
+    local function __koxta_parent()
+        if gethui then
+            local ok, h = pcall(gethui)
+            if ok and typeof(h) == 'Instance' then return h end
+        end
+        return game:GetService('CoreGui')
+    end
+    local __parent = __koxta_parent()
+    pcall(function()
+        for _, g in ipairs(__parent:GetChildren()) do
+            if g:IsA('ScreenGui') and (g.Name == 'KOXTA' or g.Name == 'hub') then g:Destroy() end
+        end
+    end)
+    local __gui = Instance.new('ScreenGui')
+    __gui.Name = 'KOXTA'
+    __gui.ResetOnSpawn = false
+    __gui.IgnoreGuiInset = true
+    __gui.DisplayOrder = 2147483647
+    __gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    __gui.Parent = __parent
+    local __btn = Instance.new('TextButton')
+    __btn.Name = 'KOXTA_TP'
+    __btn.Size = UDim2.fromOffset(250, 58)
+    __btn.Position = UDim2.new(0.5, -125, 0, 75)
+    __btn.BackgroundColor3 = Color3.fromRGB(8,8,8)
+    __btn.BorderSizePixel = 0
+    __btn.Text = 'KOXTA  •  TP AL MEJOR'
+    __btn.TextColor3 = Color3.new(1,1,1)
+    __btn.TextSize = 16
+    __btn.Font = Enum.Font.GothamBold
+    __btn.Active = true
+    __btn.AutoButtonColor = true
+    __btn.ZIndex = 999999
+    __btn.Parent = __gui
+    local __corner = Instance.new('UICorner'); __corner.CornerRadius = UDim.new(0,10); __corner.Parent = __btn
+    local __stroke = Instance.new('UIStroke'); __stroke.Color = Color3.fromRGB(255,45,65); __stroke.Thickness = 2; __stroke.Parent = __btn
+    _G.__KOXTA_BUTTON = __btn
+    _G.__KOXTA_GUI = __gui
+end
 local httpService = game:GetService('HttpService')
 local teleportService = game:GetService('TeleportService')
 local v1 = {
@@ -21799,9 +21841,9 @@ do
 
     local parent = getParent()
 
-    -- Eliminar solo interfaces de este script; no iniciar ni reactivar el hub.
+    -- Reutilizar el boton creado al inicio; no destruirlo aqui.
     for _, obj in ipairs(parent:GetChildren()) do
-        if obj:IsA('ScreenGui') and (obj.Name == 'hub' or obj.Name == 'KOXTA') then
+        if obj:IsA('ScreenGui') and obj.Name == 'hub' then
             pcall(function() obj:Destroy() end)
         end
     end
@@ -21824,36 +21866,15 @@ do
     v52.ManualTarget = nil
     v52.Target = nil
 
-    local gui = Instance.new('ScreenGui')
-    gui.Name = 'KOXTA'
-    gui.ResetOnSpawn = false
-    gui.IgnoreGuiInset = true
-    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    gui.DisplayOrder = 999999
-    gui.Parent = parent
-
-    local button = Instance.new('TextButton')
-    button.Name = 'KOXTA_TP'
-    button.Size = UDim2.fromOffset(230, 54)
-    button.Position = UDim2.new(0.5, -115, 0, 90)
-    button.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-    button.BorderSizePixel = 0
+    local gui = _G.__KOXTA_GUI
+    local button = _G.__KOXTA_BUTTON
+    if not gui or not gui.Parent or not button or not button.Parent then
+        error('no se pudo crear el boton KOXTA')
+    end
     button.Text = 'KOXTA  •  TP AL MEJOR'
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 15
-    button.Font = Enum.Font.GothamBold
-    button.AutoButtonColor = true
-    button.ZIndex = 100
-    button.Parent = gui
-
-    local corner = Instance.new('UICorner')
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = button
-
-    local stroke = Instance.new('UIStroke')
-    stroke.Color = Color3.fromRGB(255, 45, 65)
-    stroke.Thickness = 2
-    stroke.Parent = button
+    button.Visible = true
+    button.Active = true
+    button.ZIndex = 999999
 
     local busy = false
 
