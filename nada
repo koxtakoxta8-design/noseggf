@@ -18187,15 +18187,12 @@ do
 
                 return
             end
-
-            -- MODO: detectar o melhor ovo, ir ate ele e PARAR AQUI.
-            -- Nao executa trap, TryCarry, retorno, claim ou proximo ciclo.
-            v52.Stage = 'melhor-ovo-encontrado'
+            -- STOP FINAL: chegou ao melhor ovo. Nao executa trap, carry, retorno ou entrega.
+            v52.Stage = 'best-egg-stop'
             v52.Running = false
             v51.Enabled = false
             v257.abort = true
             f8('cheguei ao melhor ovo - parado')
-            f7('melhor ovo encontrado: %s - farm parado no ovo', info3.name)
             return
 
             local v628, v629, v630 = pcall(f18, nil, nil, nil)
@@ -18773,7 +18770,7 @@ do
 
         v45.Start()
     end
-
+\n    -- BOTON MINIMO: conserva la mecanica original y solo expone Start/Stop.\n    task.spawn(function()\n        task.wait(0.25)\n        local ok, err = pcall(function()\n            local Players = game:GetService("Players")\n            local UIS = game:GetService("UserInputService")\n            local player = Players.LocalPlayer\n            local guiParent\n            local gethuiFn = rawget(getgenv and getgenv() or _G, "gethui")\n            if type(gethuiFn) == "function" then\n                local a = pcall(gethuiFn)\n                if a then guiParent = gethuiFn() end\n            end\n            if not guiParent then\n                guiParent = player:FindFirstChildOfClass("PlayerGui") or game:GetService("CoreGui")\n            end\n            local old = guiParent:FindFirstChild("AutoStealEggButtonOnly")\n            if old then old:Destroy() end\n\n            local sg = Instance.new("ScreenGui")\n            sg.Name = "AutoStealEggButtonOnly"\n            sg.ResetOnSpawn = false\n            sg.IgnoreGuiInset = true\n            sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling\n            sg.Parent = guiParent\n\n            local b = Instance.new("TextButton")\n            b.Name = "Toggle"\n            b.Size = UDim2.fromOffset(180, 52)\n            b.Position = UDim2.new(1, -195, 0, 90)\n            b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)\n            b.TextColor3 = Color3.new(1,1,1)\n            b.Text = "🥚 IR AL MEJOR HUEVO"\n            b.TextSize = 15\n            b.Font = Enum.Font.GothamBold\n            b.AutoButtonColor = true\n            b.Parent = sg\n            Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)\n\n            local stroke = Instance.new("UIStroke")\n            stroke.Thickness = 2\n            stroke.Color = Color3.fromRGB(255, 170, 0)\n            stroke.Parent = b\n\n            local busy = false\n            b.Activated:Connect(function()\n                if busy then return end\n                busy = true\n                if v52.Running then\n                    v45.Stop()\n                else\n                    v45.Start()\n                end\n                task.wait(0.15)\n                busy = false\n            end)\n\n            local dragging = false\n            local dragStart\n            local startPos\n            b.InputBegan:Connect(function(input)\n                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then\n                    dragging = true\n                    dragStart = input.Position\n                    startPos = b.Position\n                end\n            end)\n            b.InputEnded:Connect(function(input)\n                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then\n                    dragging = false\n                end\n            end)\n            UIS.InputChanged:Connect(function(input)\n                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then\n                    local d = input.Position - dragStart\n                    b.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)\n                end\n            end)\n\n            v46.Heartbeat:Connect(function()\n                if not b.Parent then return end\n                if v52.Running then\n                    b.Text = "⏳ YENDO AL MEJOR HUEVO..."\n                    b.BackgroundColor3 = Color3.fromRGB(35, 90, 35)\n                elseif v52.Stage == "best-egg-stop" then\n                    b.Text = "🥚 EN EL MEJOR HUEVO"\n                    b.BackgroundColor3 = Color3.fromRGB(90, 70, 20)\n                else\n                    b.Text = "🥚 IR AL MEJOR HUEVO"\n                    b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)\n                end\n            end)\n        end)\n        if not ok then\n            warn("AutoStealEggButton: " .. tostring(err))\n        end\n    end)\n
     v74 = {
         bg = Color3.fromRGB(0, 0, 0),
         panel = Color3.fromRGB(8, 8, 8),
@@ -21781,6 +21778,13 @@ local function f58()
     end
 end
 
+-- Ocultar somente a interface visual original; a mecanica permanece ativa.
+pcall(function()
+    if v77 then v77.Enabled = false end
+    if v76 and v76.Gui then v76.Gui.Enabled = false end
+    if v45.TopNotice then v45.TopNotice.Visible = false end
+end)
+
 f58()
 f13('FARM')
 v81.ApplyScale()
@@ -21801,73 +21805,6 @@ task.spawn(function()
     v53()
     pcall(v67.FindState)
 end)
-
--- BOTAO MINIMO: usa o Start/Stop original, sem alterar a selecao ou o TP.
-pcall(function()
-    if v77 then v77.Enabled = false end
-    if v76 and v76.Gui then v76.Gui.Enabled = false end
-    if v45.TopNotice then v45.TopNotice.Visible = false end
-end)
-
-local Players = game:GetService('Players')
-local UIS = game:GetService('UserInputService')
-local lp = Players.LocalPlayer
-local cg = game:GetService('CoreGui')
-local sg = Instance.new('ScreenGui')
-sg.Name = 'AutoStealEggOnlyButton'
-sg.ResetOnSpawn = false
-sg.IgnoreGuiInset = true
-sg.Parent = cg
-
-local b = Instance.new('TextButton')
-b.Name = 'Start'
-b.Size = UDim2.fromOffset(170, 50)
-b.Position = UDim2.new(1, -185, 0, 80)
-b.BackgroundColor3 = Color3.fromRGB(25,25,25)
-b.TextColor3 = Color3.new(1,1,1)
-b.TextSize = 16
-b.Font = Enum.Font.GothamBold
-b.Text = '🥚 IR AL MEJOR HUEVO'
-b.AutoButtonColor = true
-b.Parent = sg
-Instance.new('UICorner', b).CornerRadius = UDim.new(0,10)
-
-local dragging, dragStart, startPos
-b.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true; dragStart = input.Position; startPos = b.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
-    end
-end)
-UIS.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local d = input.Position - dragStart
-        b.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
-    end
-end)
-
-b.Activated:Connect(function()
-    if v52.Running then
-        v45.Stop()
-        b.Text = '🥚 IR AL MEJOR HUEVO'
-    else
-        b.Text = '⏳ BUSCANDO MEJOR HUEVO...'
-        v45.Start()
-    end
-end)
-
-v46.Heartbeat:Connect(function()
-    if v52.Running then
-        b.Text = '⏳ YENDO AL MEJOR HUEVO...'
-    else
-        if v52.Stage == 'melhor-ovo-encontrado' then
-            b.Text = '🥚 LLEGÓ AL MEJOR HUEVO'
-        end
-    end
-end)
-
 f7('hub carregado \183 %d bichos no catalogo \183 linha em X=%d', #v58.All(), math.floor(v57.SepX))
 
 if v50 then
