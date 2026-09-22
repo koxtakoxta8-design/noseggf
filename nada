@@ -1,60 +1,90 @@
--- STEAL AN EGG - MECANICA EXTRAIDA
+-- STEAL AN EGG - MECANICA: POLLO/TICKET -> MEJOR HUEVO
 --
--- Este bloque esta hecho para ejecutarse DESPUES de cargar el script original.
--- Usa las mismas funciones internas del archivo original:
---   v67.OpenWindow()  -> prepara la ventana de TP usando el huevo de paso
---   v60.Best()        -> selecciona el mejor huevo con el mismo ranking
---   v67.Blink()       -> hace el mismo TP del sistema original
+-- IMPORTANTE:
+-- Este fragmento NO es un script independiente.
+-- Pegalo AL FINAL del script original, donde v60 y v67 siguen en alcance.
 --
--- No inicia el Auto Farm, no entrega el huevo y no repite ciclos.
--- La secuencia es: preparar la mecanica -> buscar mejor huevo -> TP al mejor huevo.
+-- Secuencia exacta basada en la mecanica del archivo:
+-- 1) v67.OpenWindow() encuentra y carga el huevo de paso/primera area (ticket, el "pollo").
+-- 2) La funcion original abre la ventana mediante ForestStrike/ragdoll.
+-- 3) v60.Best() obtiene el mejor huevo segun el ranking original.
+-- 4) v67.Blink() hace TP al mejor huevo.
+-- 5) Se detiene ahi. NO hace Auto Farm ni entrega ni repite.
 
-local function Koxta_SoloTPAlMejorHuevo()
-    -- 1) Abre la misma ventana que utiliza el script original.
-    -- Esta parte es la mecanica que permite hacer el TP especial.
-    local okWindow, errWindow = pcall(function()
-        return v67.OpenWindow()
-    end)
-
-    if not okWindow then
-        warn('[STEAL AN EGG] Error abriendo ventana:', errWindow)
+local function POLLO_A_MEJOR()
+    -- Paso 1: agarrar el huevo de paso (ticket/pollo) y abrir la ventana.
+    local okWindow, errWindow = pcall(v67.OpenWindow)
+    if not okWindow or not errWindow then
+        warn("[POLLO->MEJOR] No se pudo abrir la ventana: " .. tostring(errWindow))
         return false
     end
 
-    if errWindow ~= true then
-        warn('[STEAL AN EGG] No se pudo abrir la ventana:', errWindow)
-        return false
-    end
+    task.wait(0.05)
 
-    -- 2) Busca el mejor huevo usando EXACTAMENTE el selector del script.
-    local target = v60.Best()
-
-    if not target or not target.rec or not target.rec.BottomCFrame then
-        warn('[STEAL AN EGG] No encontre un mejor huevo disponible.')
+    -- Paso 2: seleccionar el mejor huevo con EL MISMO ranking del script.
+    local okBest, best = pcall(v60.Best)
+    if not okBest or type(best) ~= "table" or not best.rec then
         pcall(v67.CloseWindow)
+        warn("[POLLO->MEJOR] No se encontro el mejor huevo")
         return false
     end
 
-    local position = target.rec.BottomCFrame.Position
+    local rec = best.rec
+    if not rec.BottomCFrame then
+        pcall(v67.CloseWindow)
+        warn("[POLLO->MEJOR] El mejor huevo no tiene BottomCFrame")
+        return false
+    end
 
-    -- 3) TP al mejor huevo con el mismo Blink del script original.
+    -- Paso 3: TP al mejor huevo usando EL MISMO Blink del script.
+    local pos = rec.BottomCFrame.Position
     local okBlink, blinkResult = pcall(function()
-        return v67.Blink(Vector3.new(
-            position.X,
-            position.Y + 3,
-            position.Z
-        ))
+        return v67.Blink(Vector3.new(pos.X, pos.Y + 3, pos.Z))
     end)
 
     if not okBlink or not blinkResult then
-        warn('[STEAL AN EGG] El TP al mejor huevo fallo:', blinkResult)
         pcall(v67.CloseWindow)
+        warn("[POLLO->MEJOR] Fallo el TP: " .. tostring(blinkResult))
         return false
     end
 
-    print('[STEAL AN EGG] TP realizado al mejor huevo:', target.rec.AssetCategory)
+    print("[POLLO->MEJOR] TP realizado al mejor huevo: " .. tostring(best.info and best.info.name or rec.AssetCategory))
     return true
 end
 
--- Ejecutar una sola vez:
-Koxta_SoloTPAlMejorHuevo()
+-- BOTON PARA ACTIVAR LA MECANICA
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "POLLO_A_MEJOR_GUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.fromOffset(210, 48)
+button.Position = UDim2.new(0.5, -105, 0.75, 0)
+button.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.Text = "🐔 POLLO -> MEJOR HUEVO"
+button.TextSize = 14
+button.Font = Enum.Font.GothamBold
+button.BorderSizePixel = 0
+button.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = button
+
+local busy = false
+button.MouseButton1Click:Connect(function()
+    if busy then return end
+    busy = true
+    button.Text = "BUSCANDO..."
+
+    local ok = POLLO_A_MEJOR()
+
+    button.Text = ok and "✓ TP HECHO" or "✕ INTENTAR DE NUEVO"
+    task.wait(1.2)
+    button.Text = "🐔 POLLO -> MEJOR HUEVO"
+    busy = false
+end)
