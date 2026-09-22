@@ -21790,13 +21790,17 @@ f8('idle')
 task.spawn(function()
     task.wait(0.5)
 
-    -- Oculta la interfaz original de configuraciones sin tocar la mecanica interna.
+    -- Oculta TODA la interfaz original del hub.
+    -- No se destruye porque la mecanica interna sigue usando sus referencias.
     if v76 and v76.Gui then
-        for _, obj in ipairs(v76.Gui:GetDescendants()) do
-            if obj:IsA('GuiObject') then
-                obj.Visible = false
-            end
-        end
+        pcall(function()
+            v76.Gui.Enabled = false
+        end)
+    end
+    if v77 then
+        pcall(function()
+            v77.Enabled = false
+        end)
     end
 
     local parent = (gethui and pcall(gethui) and gethui()) or game:GetService('CoreGui')
