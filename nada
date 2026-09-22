@@ -18174,6 +18174,15 @@ do
 
             local v625, v626, v627 = pcall(v257.To, rec.BottomCFrame.Position, v51.ApproachRadius, v51.MaxTravelTime)
 
+            if v625 and v626 then
+                v52.Stage = 'STOPPED_AT_BEST_EGG'
+                v52.Running = false
+                v51.Enabled = false
+                v257.abort = true
+                f7('LLEGUE AL MEJOR HUEVO - DETENIDO')
+                return
+            end
+
             if not v625 then
                 f32('mover', (tostring(v626)))
 
@@ -18187,17 +18196,6 @@ do
 
                 return
             end
-
-            -- PARADA FINAL: llego al mejor huevo y no ejecuta NADA mas.
-            -- No trap, no carry, no retorno, no claim, no siguiente ciclo.
-            v52.Stage = 'best-egg-stop'
-            v52.Target = nil
-            v52.Running = false
-            v51.Enabled = false
-            v257.abort = true
-            f8('llegue al mejor huevo - detenido')
-            f7('AUTO STEAL EGG detenido en el mejor huevo')
-            do return end
 
             local v628, v629, v630 = pcall(f18, nil, nil, nil)
 
@@ -18774,140 +18772,6 @@ do
 
         v45.Start()
     end
-
-
-    -- AUTO STEAL EGG: BOTON MINIMO (mantiene toda la mecanica original)
-    -- Se ejecuta v45.Start() original y se detiene JUSTO despues de llegar
-    -- al mejor huevo, antes de trap/carry/return/delivery.
-    task.spawn(function()
-        local ok, err = pcall(function()
-            local Players = game:GetService("Players")
-            local CoreGui = game:GetService("CoreGui")
-            local player = Players.LocalPlayer
-
-            local parent
-            if type(gethui) == "function" then
-                local okGui, gui = pcall(gethui)
-                if okGui and gui then
-                    parent = gui
-                end
-            end
-            if not parent then
-                parent = player:WaitForChild("PlayerGui")
-            end
-
-            local old = parent:FindFirstChild("AUTO_STEAL_EGG_ONLY")
-            if old then old:Destroy() end
-
-            local gui = Instance.new("ScreenGui")
-            gui.Name = "AUTO_STEAL_EGG_ONLY"
-            gui.ResetOnSpawn = false
-            gui.IgnoreGuiInset = true
-            gui.DisplayOrder = 999999
-            gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-            gui.Parent = parent
-
-            local button = Instance.new("TextButton")
-            button.Name = "GO_TO_BEST_EGG"
-            button.Size = UDim2.fromOffset(220, 56)
-            button.Position = UDim2.new(0.5, -110, 0.82, 0)
-            button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            button.BorderSizePixel = 0
-            button.Text = "IR AL MEJOR HUEVO"
-            button.TextColor3 = Color3.fromRGB(255, 255, 255)
-            button.TextSize = 16
-            button.Font = Enum.Font.GothamBold
-            button.AutoButtonColor = true
-            button.Active = true
-            button.Visible = true
-            button.ZIndex = 100
-
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 12)
-            corner.Parent = button
-
-            local stroke = Instance.new("UIStroke")
-            stroke.Thickness = 2
-            stroke.Color = Color3.fromRGB(255, 45, 65)
-            stroke.Parent = button
-
-            button.Parent = gui
-
-            local dragging = false
-            local dragStart
-            local startPos
-
-            button.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1
-                    or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                    dragStart = input.Position
-                    startPos = button.Position
-                end
-            end)
-
-            button.InputChanged:Connect(function(input)
-                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
-                    or input.UserInputType == Enum.UserInputType.Touch) then
-                    local delta = input.Position - dragStart
-                    button.Position = UDim2.new(
-                        startPos.X.Scale, startPos.X.Offset + delta.X,
-                        startPos.Y.Scale, startPos.Y.Offset + delta.Y
-                    )
-                end
-            end)
-
-            game:GetService("UserInputService").InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1
-                    or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = false
-                end
-            end)
-
-            button.MouseButton1Click:Connect(function()
-                if v52.Running then
-                    v45.Stop()
-                    button.Text = "DETENIDO"
-                    return
-                end
-
-                button.Text = "BUSCANDO MEJOR HUEVO..."
-
-                local started, startErr = pcall(function()
-                    v45.Start()
-                end)
-
-                if not started then
-                    button.Text = "ERROR AL INICIAR"
-                    warn("[AUTO STEAL EGG] " .. tostring(startErr))
-                    task.delay(2, function()
-                        if button and button.Parent then
-                            button.Text = "IR AL MEJOR HUEVO"
-                        end
-                    end)
-                    return
-                end
-
-                task.spawn(function()
-                    while button.Parent and v52.Running do
-                        task.wait(0.1)
-                    end
-
-                    if button.Parent then
-                        if v52.Stage == "best-egg-stop" then
-                            button.Text = "LLEGUE AL MEJOR HUEVO"
-                        elseif button.Text ~= "DETENIDO" then
-                            button.Text = "IR AL MEJOR HUEVO"
-                        end
-                    end
-                end)
-            end)
-        end)
-
-        if not ok then
-            warn("[AUTO STEAL EGG BUTTON] " .. tostring(err))
-        end
-    end)
 
     v74 = {
         bg = Color3.fromRGB(0, 0, 0),
@@ -21789,6 +21653,59 @@ table.insert(v52.Conns, v46.Heartbeat:Connect(function(delta2)
         end
     end
 end))
+
+
+-- ONLY BUTTON MODE: hide the original interface and expose one button.
+task.spawn(function()
+    task.wait(0.15)
+    pcall(function()
+        if v77 then v77.Enabled = false end
+    end)
+
+    local parent = (gethui and gethui()) or game:GetService('CoreGui')
+    local gui = Instance.new('ScreenGui')
+    gui.Name = 'AutoStealEgg_OnlyButton'
+    gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
+    gui.DisplayOrder = 999999
+    gui.Parent = parent
+
+    local b = Instance.new('TextButton')
+    b.Name = 'GoBestEgg'
+    b.Size = UDim2.fromOffset(190, 48)
+    b.Position = UDim2.new(0.5, -95, 0.82, 0)
+    b.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.TextSize = 14
+    b.Font = Enum.Font.GothamBold
+    b.Text = '🥚 IR AL MEJOR HUEVO'
+    b.AutoButtonColor = true
+    b.Parent = gui
+
+    local c = Instance.new('UICorner')
+    c.CornerRadius = UDim.new(0, 10)
+    c.Parent = b
+
+    b.MouseButton1Click:Connect(function()
+        if v52.Running then
+            return
+        end
+        b.Text = '🥚 BUSCANDO MEJOR HUEVO...'
+        local ok, err = pcall(v45.Start)
+        if not ok then
+            b.Text = 'ERROR: ' .. string.sub(tostring(err), 1, 28)
+            return
+        end
+        task.spawn(function()
+            while v52.Running do task.wait(0.1) end
+            if v52.Stage == 'STOPPED_AT_BEST_EGG' then
+                b.Text = '✅ LLEGÓ AL MEJOR HUEVO'
+            else
+                b.Text = '🥚 IR AL MEJOR HUEVO'
+            end
+        end)
+    end)
+end)
 
 v52.RareConnectionOk = pcall(function()
     table.insert(v52.Conns, v54.RarityRevealed:Connect(function(p164)
