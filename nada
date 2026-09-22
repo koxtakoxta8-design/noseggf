@@ -15678,10 +15678,6 @@ do
                 return false, 'blink falhou'
             end
 
-            -- MODIFICADO: al llegar al mejor huevo, no intenta recogerlo ni entregarlo.
-            -- FetchChain cerrara la ventana y el ciclo se detendra despues del TP.
-            return true, 'tp realizado; detener aqui'
-
             v52.Stage = 'ovo:esperar-liberacao'
             v95[#v95 + 1] = 'ovo:esperar-liberacao'
 
@@ -15762,30 +15758,12 @@ do
                 return false, 'alvo nao carregou: ' .. tostring(v343)
             end
 
-            local deliverFallback = v57.SafeSpot() or v57.DeliverFallback
-            local v346, v347 = v257.To(deliverFallback, (v51.DeliverRadius or 8) + 4, v51.MaxTravelTime)
-
-            if not v346 and v347 == 'cancelado' then
-                return false, 'farm desligado com o ovo na mao'
-            end
-
-            local v348 = f22(function()
-                return v60.Soltos > soltos
-            end, v51.ClaimWait)
-            local stage = 'ovo:claim=' .. tostring(v348)
-
-            v52.Stage = stage
-            v95[#v95 + 1] = stage
-
-            if #v95 > 24 then
-                table.remove(v95, 1)
-            end
-            if v348 then
-                v60.LastClaimAt = os.clock()
-            end
-            if not v348 then
-                return false, 'deposito nao confirmou, o ovo esta na mao'
-            end
+            -- CAMBIO: misma mecanica de TP + agarre, pero aqui termina.
+            -- No entrega, no AutoPlace y no inicia otro ciclo.
+            v52.Running = false
+            v51.Enabled = false
+            v257.abort = true
+            f7('peguei o melhor ovo; ciclo encerrado')
 
             return true, 'ok'
         end
@@ -18021,7 +17999,6 @@ do
 
             f8('target: %s (%s) at %d studs', info3.name, info3.rarity, f5(v603.dist))
             f7('alvo %s [%s] esc=%.2f mut=%d area=%s', info3.name, info3.rarity, rec.AssetScale or 1, f5((tonumber(v603.muts))), (tostring(rec.AreaId)))
-            task.wait(2)
 
             v52.Stage = 'sair-da-esteira'
             v95[#v95 + 1] = 'sair-da-esteira'
@@ -18127,8 +18104,11 @@ do
                     end
                 end
                 if (v615 or 0) > 0 then
-                    f7('TP realizado al mejor huevo; se detiene aqui (parou em: %s)', (tostring(v616)))
-                    v45.Stop()
+                    -- CAMBIO: despues de agarrar el mejor huevo, se detiene todo.
+                    f7('TP al mejor huevo + agarre completado; detenido')
+                    v52.Running = false
+                    v51.Enabled = false
+                    v257.abort = true
 
                     return
                 end
