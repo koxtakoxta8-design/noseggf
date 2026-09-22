@@ -1,4 +1,3 @@
--- KOXTA
 -- ts file was generated at discord.gg/f8XjPE2c6Y
 
 local runService = game:GetService('RunService')
@@ -15761,7 +15760,6 @@ do
 
             -- CAMBIO: misma mecanica de TP + agarre, pero aqui termina.
             -- No entrega, no AutoPlace y no inicia otro ciclo.
-            v52.FinishedAfterBest = true
             v52.Running = false
             v51.Enabled = false
             v257.abort = true
@@ -18108,7 +18106,6 @@ do
                 if (v615 or 0) > 0 then
                     -- CAMBIO: despues de agarrar el mejor huevo, se detiene todo.
                     f7('TP al mejor huevo + agarre completado; detenido')
-                    v52.FinishedAfterBest = true
                     v52.Running = false
                     v51.Enabled = false
                     v257.abort = true
@@ -18286,7 +18283,6 @@ do
             end
 
             v52.Running = true
-            v52.FinishedAfterBest = false
             v257.abort = false
             v51.Enabled = true
             v52.Stats.startedAt = os.clock()
@@ -21789,3 +21785,61 @@ end
 
 pcall(print, f4('[hub] build %s carregado \183 %d bichos \183 entrega em (%.1f, %.1f, %.1f)', tostring(v45.Build), #v58.All(), v57.DeliverPos().X, v57.DeliverPos().Y, v57.DeliverPos().Z))
 f8('idle')
+
+-- KOXTA: interfaz simplificada a un solo boton.
+task.spawn(function()
+    task.wait(0.5)
+
+    -- Oculta la interfaz original de configuraciones sin tocar la mecanica interna.
+    if v76 and v76.Gui then
+        for _, obj in ipairs(v76.Gui:GetDescendants()) do
+            if obj:IsA('GuiObject') then
+                obj.Visible = false
+            end
+        end
+    end
+
+    local parent = (gethui and pcall(gethui) and gethui()) or game:GetService('CoreGui')
+    local old = parent:FindFirstChild('KOXTA')
+    if old then
+        old:Destroy()
+    end
+
+    local gui = Instance.new('ScreenGui')
+    gui.Name = 'KOXTA'
+    gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
+    gui.Parent = parent
+
+    local button = Instance.new('TextButton')
+    button.Name = 'KOXTA_TP'
+    button.Size = UDim2.fromOffset(190, 48)
+    button.Position = UDim2.new(0.5, -95, 0, 80)
+    button.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+    button.BorderSizePixel = 0
+    button.Text = 'KOXTA  •  TP AL MEJOR'
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 14
+    button.Font = Enum.Font.GothamBold
+    button.Parent = gui
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = button
+
+    local stroke = Instance.new('UIStroke')
+    stroke.Color = Color3.fromRGB(255, 45, 65)
+    stroke.Thickness = 2
+    stroke.Parent = button
+
+    local busy = false
+    button.MouseButton1Click:Connect(function()
+        if busy or v52.Running then
+            return
+        end
+
+        busy = true
+        button.Text = 'KOXTA  •  EJECUTANDO...'
+        v45.Start()
+    end)
+end)
