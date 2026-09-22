@@ -16224,6 +16224,128 @@ do
         print("SISTEMA 65% + AUTO GRAB HUEVO/ROBAR CARGADO")
         print("ESPERANDO PROMPT...")
 
+        function v67.FetchOne(p59)
+            v52.Stage = 'ovo:inicio'
+            v95[#v95 + 1] = 'ovo:inicio'
+
+            if #v95 > 24 then
+                table.remove(v95, 1)
+            end
+            if not p59 or not p59.BottomCFrame then
+                return false, 'alvo invalido'
+            end
+            if not v67.WindowOpen() then
+                return false, 'janela fechada'
+            end
+            if v60.Held ~= nil then
+                return false, 'ainda estou com um ovo na mao'
+            end
+
+            local soltos = v60.Soltos
+            local position5 = p59.BottomCFrame.Position
+
+            v52.Stage = 'ovo:blink-ida'
+            v95[#v95 + 1] = 'ovo:blink-ida'
+
+            if #v95 > 24 then
+                table.remove(v95, 1)
+            end
+            if not v67.Blink(Vector3.new(position5.X, position5.Y + 3, position5.Z)) then
+                return false, 'blink falhou'
+            end
+
+            v52.Stage = 'ovo:esperar-liberacao'
+            v95[#v95 + 1] = 'ovo:esperar-liberacao'
+
+            if #v95 > 24 then
+                table.remove(v95, 1)
+            end
+
+            local v337, v338 = v67.WaitForBlinkCarryWindow()
+
+            if not v337 then
+                v67.Unpin()
+
+                v67.Window.deadline = 0
+
+                return false, 'carry ainda bloqueado: ' .. tostring(v338)
+            end
+
+            v52.Stage = 'ovo:levantar'
+            v95[#v95 + 1] = 'ovo:levantar'
+
+            if #v95 > 24 then
+                table.remove(v95, 1)
+            end
+
+            local v339, v340 = v67.CancelRagdoll()
+
+            if not v339 then
+                v67.Unpin()
+
+                v67.Window.deadline = 0
+
+                return false, 'ragdoll nao cancelou: ' .. tostring(v340)
+            end
+
+            v52.Stage = 'ovo:carry'
+            v95[#v95 + 1] = 'ovo:carry'
+
+            if #v95 > 24 then
+                table.remove(v95, 1)
+            end
+
+            local v341 = false
+            local v342 = os.clock() + (v51.BlinkCarryDeadline or 5)
+            local v343
+
+            while v342 > os.clock() do
+                local v344, v345
+
+                v344, v345, v343 = pcall(v54.CarryFieldEgg, p59.Uid, v60.SlotKeyFor(p59))
+
+                if v344 then
+                    if v345 then
+                        v60.RememberCarried(p59)
+
+                        v341 = true
+
+                        break
+                    end
+                else
+                    v343 = v345
+                end
+
+                task.wait(v51.BlinkCarryDelay)
+            end
+
+            v52.Stage = 'ovo:volta-por-hop'
+            v95[#v95 + 1] = 'ovo:volta-por-hop'
+
+            if #v95 > 24 then
+                table.remove(v95, 1)
+            end
+
+            v67.Unpin()
+
+            v67.Window.deadline = 0
+
+            if not v341 then
+                return false, 'alvo nao carregou: ' .. tostring(v343)
+            end
+
+            -- KOXTA: este punto solo se alcanza despues de que el objetivo
+            -- seleccionado (el mejor huevo) fue realmente agarrado.
+            -- Aqui arranca la secuencia del usuario, y no antes.
+            v52.FinishedAfterBest = true
+            v52.Running = false
+            v51.Enabled = false
+            v257.abort = true
+            f7('peguei o melhor ovo; iniciando secuencia')
+            task.spawn(StartSequence)
+
+            return true, 'ok'
+        end
         function v67.FetchChain(fn2)
             if not v67.BlinkReady() then
                 return 0, 'blink indisponivel'
@@ -18566,10 +18688,6 @@ do
                     v52.Running = false
                     v51.Enabled = false
                     v257.abort = true
-
-                    -- KOXTA: al terminar el TP y agarrar el mejor huevo,
-                    -- inicia la secuencia pegada por el usuario.
-                    task.spawn(StartSequence)
 
                     return
                 end
