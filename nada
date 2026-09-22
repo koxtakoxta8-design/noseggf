@@ -18723,140 +18723,7 @@ do
             v51.Enabled = false
             v257.abort = true
 
-            
-
--- ============================================================
--- MINIMAL AUTO STEAL EGG BUTTON
--- The original farm/target/carry/deliver mechanics are preserved.
--- Only the visible interface is replaced by this single button.
--- ============================================================
-pcall(function()
-    -- Hide the original interface elements while keeping their logic alive.
-    pcall(function() if v45.TopNotice then v45.TopNotice.Enabled = false end end)
-    pcall(function() if v76 and v76.Gui then v76.Gui.Enabled = false end end)
-    pcall(function() if v77 then v77.Enabled = false end end)
-
-    local parent = nil
-    pcall(function()
-        if gethui then
-            local ok, gui = pcall(gethui)
-            if ok and typeof(gui) == 'Instance' then parent = gui end
-        end
-    end)
-    if not parent then
-        parent = localPlayer:WaitForChild('PlayerGui')
-    end
-
-    local old = parent:FindFirstChild('AutoStealEggButton')
-    if old then old:Destroy() end
-
-    local gui = Instance.new('ScreenGui')
-    gui.Name = 'AutoStealEggButton'
-    gui.ResetOnSpawn = false
-    gui.IgnoreGuiInset = true
-    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    gui.DisplayOrder = 999999
-    gui.Parent = parent
-
-    local button = Instance.new('TextButton')
-    button.Name = 'Toggle'
-    button.Size = UDim2.fromOffset(150, 48)
-    button.Position = UDim2.new(1, -165, 0, 90)
-    button.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    button.BackgroundTransparency = 0.08
-    button.BorderSizePixel = 0
-    button.AutoButtonColor = false
-    button.Font = Enum.Font.GothamBold
-    button.TextSize = 15
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.Text = '🥚  AUTO STEAL: OFF'
-    button.Parent = gui
-
-    local corner = Instance.new('UICorner')
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = button
-
-    local stroke = Instance.new('UIStroke')
-    stroke.Thickness = 1.5
-    stroke.Color = Color3.fromRGB(255, 55, 75)
-    stroke.Transparency = 0.15
-    stroke.Parent = button
-
-    local dragging = false
-    local dragInput, dragStart, startPos
-
-    button.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = button.Position
-            dragInput = input
-        end
-    end)
-
-    button.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    game:GetService('UserInputService').InputChanged:Connect(function(input)
-        if dragging and input == dragInput then
-            local delta = input.Position - dragStart
-            button.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-
-    game:GetService('UserInputService').InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-
-    local suppressClick = false
-    local downAt = 0
-
-    button.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            downAt = os.clock()
-        end
-    end)
-
-    button.Activated:Connect(function()
-        if os.clock() - downAt > 0.35 then
-            return
-        end
-        pcall(function()
-            v45.Toggle()
-        end)
-    end)
-
-    table.insert(v52.Conns, v46.Heartbeat:Connect(function()
-        if not button.Parent then return end
-        local running = v52.Running == true
-        if running then
-            button.Text = '🥚  AUTO STEAL: ON'
-            button.BackgroundColor3 = Color3.fromRGB(20, 95, 55)
-            stroke.Color = Color3.fromRGB(50, 255, 150)
-        else
-            button.Text = '🥚  AUTO STEAL: OFF'
-            button.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-            stroke.Color = Color3.fromRGB(255, 55, 75)
-        end
-    end))
-
-    button.MouseEnter:Connect(function()
-        button.BackgroundTransparency = 0
-    end)
-    button.MouseLeave:Connect(function()
-        button.BackgroundTransparency = 0.08
-    end)
-end)
-
-f8('idle')
+            f8('idle')
             f7('farm parado')
 
             local character35 = localPlayer.Character
@@ -21933,6 +21800,159 @@ else
 end
 
 pcall(print, f4('[hub] build %s carregado \183 %d bichos \183 entrega em (%.1f, %.1f, %.1f)', tostring(v45.Build), #v58.All(), v57.DeliverPos().X, v57.DeliverPos().Y, v57.DeliverPos().Z))
-f8('idle')
 
-end
+
+-- =========================================================
+-- MINIMAL AUTO STEAL EGG BUTTON
+-- UI original oculta; mecanica original intacta
+-- =========================================================
+pcall(function()
+    -- Ocultar la interfaz original DESPUES de que ya fue creada.
+    pcall(function()
+        if v77 then
+            v77.Enabled = false
+        end
+    end)
+    pcall(function()
+        if v76 and v76.Gui then
+            v76.Gui.Enabled = false
+        end
+    end)
+    pcall(function()
+        if v76 then
+            v76.Visible = false
+        end
+    end)
+    pcall(function()
+        if v84 then
+            v84.Visible = false
+        end
+    end)
+
+    local old = game:GetService('CoreGui'):FindFirstChild('KOXTA_AutoStealEgg_Button')
+    if old then
+        old:Destroy()
+    end
+
+    local sg = Instance.new('ScreenGui')
+    sg.Name = 'KOXTA_AutoStealEgg_Button'
+    sg.ResetOnSpawn = false
+    sg.IgnoreGuiInset = true
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.DisplayOrder = 2147483647
+    sg.Parent = game:GetService('CoreGui')
+
+    local button = Instance.new('TextButton')
+    button.Name = 'Toggle'
+    button.Size = UDim2.fromOffset(170, 50)
+    button.Position = UDim2.new(1, -185, 0, 90)
+    button.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 14
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Text = '🥚  AUTO STEAL: OFF'
+    button.Parent = sg
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = button
+
+    local stroke = Instance.new('UIStroke')
+    stroke.Thickness = 2
+    stroke.Color = Color3.fromRGB(255, 60, 70)
+    stroke.Parent = button
+
+    local dragging = false
+    local dragInput
+    local dragStart
+    local startPos
+
+    local function updateDrag(input)
+        local delta = input.Position - dragStart
+        button.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = button.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    button.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    userInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            updateDrag(input)
+        end
+    end)
+
+    local busy = false
+    button.Activated:Connect(function()
+        if busy then
+            return
+        end
+        busy = true
+
+        local ok, err = pcall(function()
+            v45.Toggle()
+        end)
+
+        if not ok then
+            warn('[AutoStealEgg Button] Toggle error:', err)
+        end
+
+        task.delay(0.15, function()
+            busy = false
+        end)
+    end)
+
+    local function refresh()
+        local running = false
+        pcall(function()
+            running = v52.Running == true
+        end)
+
+        if running then
+            button.Text = '🥚  AUTO STEAL: ON'
+            button.BackgroundColor3 = Color3.fromRGB(20, 100, 55)
+            stroke.Color = Color3.fromRGB(0, 255, 140)
+        else
+            button.Text = '🥚  AUTO STEAL: OFF'
+            button.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+            stroke.Color = Color3.fromRGB(255, 60, 70)
+        end
+    end
+
+    refresh()
+
+    -- Refresca el estado sin depender de la interfaz original.
+    task.spawn(function()
+        while sg.Parent do
+            refresh()
+            task.wait(0.2)
+        end
+    end)
+end)
+
+f8('idle')
