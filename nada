@@ -1,3 +1,4 @@
+-- KOXTA
 -- ts file was generated at discord.gg/f8XjPE2c6Y
 
 local runService = game:GetService('RunService')
@@ -15760,6 +15761,7 @@ do
 
             -- CAMBIO: misma mecanica de TP + agarre, pero aqui termina.
             -- No entrega, no AutoPlace y no inicia otro ciclo.
+            v52.FinishedAfterBest = true
             v52.Running = false
             v51.Enabled = false
             v257.abort = true
@@ -18106,6 +18108,7 @@ do
                 if (v615 or 0) > 0 then
                     -- CAMBIO: despues de agarrar el mejor huevo, se detiene todo.
                     f7('TP al mejor huevo + agarre completado; detenido')
+                    v52.FinishedAfterBest = true
                     v52.Running = false
                     v51.Enabled = false
                     v257.abort = true
@@ -18283,6 +18286,7 @@ do
             end
 
             v52.Running = true
+            v52.FinishedAfterBest = false
             v257.abort = false
             v51.Enabled = true
             v52.Stats.startedAt = os.clock()
