@@ -22410,7 +22410,7 @@ do
     button.Position = UDim2.new(0.5, -110, 0, 90)
     button.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
     button.BorderSizePixel = 0
-    button.Text = 'KOXTA  •  PEOR → MEJOR'
+    button.Text = 'KOXTA  •  TP AL MEJOR'
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
     button.TextSize = 15
     button.Font = Enum.Font.GothamBold
@@ -22447,7 +22447,7 @@ do
             local okWindow, windowOpened, windowErr = pcall(v67.OpenWindow)
             if not okWindow or windowOpened ~= true then
                 f7('KOXTA: no pudo abrir la ventana: %s', tostring(windowErr or windowOpened))
-                button.Text = 'KOXTA  •  PEOR → MEJOR'
+                button.Text = 'KOXTA  •  TP AL MEJOR'
                 busy = false
                 return
             end
@@ -22485,7 +22485,7 @@ do
             if not best or not best.rec or not best.rec.BottomCFrame then
                 f7('KOXTA: no encontro el mejor huevo')
                 pcall(v67.CloseWindow)
-                button.Text = 'KOXTA  •  PEOR → MEJOR'
+                button.Text = 'KOXTA  •  TP AL MEJOR'
                 busy = false
                 return
             end
@@ -22493,15 +22493,14 @@ do
             v52.Target = best
             f7('KOXTA: TP al mejor -> %s', tostring(best.info and best.info.name or best.rec.AssetCategory))
 
-            -- FetchOne hace el TP y agarra el mejor huevo.
-            -- Al confirmar el agarre, NO inicia ninguna secuencia: aqui termina.
+            -- FetchOne hace el TP y solo despues de confirmar el agarre llama StartSequence.
             local okFetch, fetched, fetchErr = pcall(v67.FetchOne, best.rec)
             if not okFetch or not fetched then
                 f7('KOXTA: no agarro el mejor huevo: %s', tostring(okFetch and fetchErr or fetched))
                 pcall(v67.CloseWindow)
             end
 
-            button.Text = 'KOXTA  •  PEOR → MEJOR'
+            button.Text = 'KOXTA  •  TP AL MEJOR'
             busy = false
         end)
     end)
