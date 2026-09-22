@@ -22270,9 +22270,7 @@ table.insert(v52.Conns, v48.InputBegan:Connect(function(input7, p166)
 
         return
     end
-    if input7.KeyCode == Enum.KeyCode.RightShift then
-        v45.Toggle()
-    end
+    -- KOXTA usa exclusivamente su boton; no iniciar el farm original con teclas.
 end))
 
 function v45.Destroy()
@@ -22430,12 +22428,48 @@ do
 
     local busy = false
     button.MouseButton1Click:Connect(function()
-        if busy or v52.Running then
+        if busy then
             return
         end
 
         busy = true
         button.Text = 'KOXTA  •  EJECUTANDO...'
-        pcall(v45.Start)
+
+        task.spawn(function()
+            -- KOXTA: UNICO FLUJO
+            -- peor/pasaje -> ventana -> mejor -> TP -> agarre -> StartSequence
+            local okWindow, windowOpened, windowErr = pcall(v67.OpenWindow)
+            if not okWindow or windowOpened ~= true then
+                f7('KOXTA: no pudo abrir la ventana: %s', tostring(windowErr or windowOpened))
+                button.Text = 'KOXTA  •  TP AL MEJOR'
+                busy = false
+                return
+            end
+
+            local okBest, best = pcall(v60.Best)
+            if not okBest or not best or not best.rec then
+                f7('KOXTA: no encontro el mejor huevo')
+                pcall(v67.CloseWindow)
+                button.Text = 'KOXTA  •  TP AL MEJOR'
+                busy = false
+                return
+            end
+
+            v52.Target = best
+            f7('KOXTA: TP al mejor -> %s', tostring(best.info and best.info.name or best.rec.AssetCategory))
+
+            -- FetchOne hace el TP y confirma el agarre del mejor huevo.
+            -- Su unico disparo de StartSequence esta despues de esa confirmacion.
+            local okFetch, fetched, fetchErr = pcall(v67.FetchOne, best.rec)
+            if not okFetch then
+                f7('KOXTA: error TP/agarrar: %s', tostring(fetched))
+            elseif not fetched then
+                f7('KOXTA: no agarro el mejor huevo: %s', tostring(fetchErr))
+            end
+
+            button.Text = 'KOXTA  •  TP AL MEJOR'
+            busy = false
+        end)
     end)
 end
+
