@@ -16215,41 +16215,11 @@ do
         end
 
         --==================================================
-        -- CONECTAR PROMPT
+        -- INICIO CONTROLADO POR KOXTA
+        -- La secuencia NO arranca por un Prompt.
+        -- KOXTA la activa unicamente despues de confirmar
+        -- que el mejor huevo fue agarrado.
         --==================================================
-
-        local function ConnectPrompt(Prompt)
-            if not Prompt:IsA("ProximityPrompt") then
-                return
-            end
-
-            if Connections[Prompt] then
-                return
-            end
-
-            Connections[Prompt] = Prompt.Triggered:Connect(function()
-                if Busy then
-                    return
-                end
-
-                print("PROMPT COMPLETADO")
-
-                task.spawn(StartSequence)
-            end)
-        end
-
-        for _, Object in ipairs(workspace:GetDescendants()) do
-            if Object:IsA("ProximityPrompt") then
-                ConnectPrompt(Object)
-            end
-        end
-
-        workspace.DescendantAdded:Connect(function(Object)
-            if Object:IsA("ProximityPrompt") then
-                task.wait()
-                ConnectPrompt(Object)
-            end
-        end)
 
         print("SISTEMA 65% + AUTO GRAB HUEVO/ROBAR CARGADO")
         print("ESPERANDO PROMPT...")
