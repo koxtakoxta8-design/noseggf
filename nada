@@ -21786,45 +21786,59 @@ end
 pcall(print, f4('[hub] build %s carregado \183 %d bichos \183 entrega em (%.1f, %.1f, %.1f)', tostring(v45.Build), #v58.All(), v57.DeliverPos().X, v57.DeliverPos().Y, v57.DeliverPos().Z))
 f8('idle')
 
--- KOXTA: interfaz simplificada a un solo boton.
-task.spawn(function()
-    task.wait(0.5)
-
-    -- Oculta TODA la interfaz original del hub.
-    -- No se destruye porque la mecanica interna sigue usando sus referencias.
-    if v76 and v76.Gui then
-        pcall(function()
-            v76.Gui.Enabled = false
-        end)
-    end
-    if v77 then
-        pcall(function()
-            v77.Enabled = false
-        end)
+-- KOXTA: UNA SOLA INTERFAZ Y UN SOLO BOTON.
+do
+    local function getParent()
+        if gethui then
+            local ok, h = pcall(gethui)
+            if ok and typeof(h) == 'Instance' then
+                return h
+            end
+        end
+        return game:GetService('CoreGui')
     end
 
-    local parent = (gethui and pcall(gethui) and gethui()) or game:GetService('CoreGui')
-    local old = parent:FindFirstChild('KOXTA')
-    if old then
-        old:Destroy()
+    local parent = getParent()
+
+    -- Elimina interfaces anteriores del hub para que no aparezca la interfaz grande.
+    for _, obj in ipairs(parent:GetChildren()) do
+        if obj:IsA('ScreenGui') and (obj.Name == 'hub' or obj.Name == 'KOXTA') then
+            pcall(function() obj:Destroy() end)
+        end
     end
+
+    -- Si el hub estaba en PlayerGui, tambien elimina esa copia vieja.
+    pcall(function()
+        local pg = localPlayer:FindFirstChildOfClass('PlayerGui')
+        if pg then
+            for _, obj in ipairs(pg:GetChildren()) do
+                if obj:IsA('ScreenGui') and (obj.Name == 'hub' or obj.Name == 'KOXTA') then
+                    pcall(function() obj:Destroy() end)
+                end
+            end
+        end
+    end)
 
     local gui = Instance.new('ScreenGui')
     gui.Name = 'KOXTA'
     gui.ResetOnSpawn = false
     gui.IgnoreGuiInset = true
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.DisplayOrder = 999999
     gui.Parent = parent
 
     local button = Instance.new('TextButton')
     button.Name = 'KOXTA_TP'
-    button.Size = UDim2.fromOffset(190, 48)
-    button.Position = UDim2.new(0.5, -95, 0, 80)
+    button.Size = UDim2.fromOffset(220, 52)
+    button.Position = UDim2.new(0.5, -110, 0, 90)
     button.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
     button.BorderSizePixel = 0
     button.Text = 'KOXTA  •  TP AL MEJOR'
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 14
+    button.TextSize = 15
     button.Font = Enum.Font.GothamBold
+    button.AutoButtonColor = true
+    button.ZIndex = 100
     button.Parent = gui
 
     local corner = Instance.new('UICorner')
@@ -21844,6 +21858,6 @@ task.spawn(function()
 
         busy = true
         button.Text = 'KOXTA  •  EJECUTANDO...'
-        v45.Start()
+        pcall(v45.Start)
     end)
-end)
+end
