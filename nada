@@ -18188,13 +18188,14 @@ do
                 return
             end
 
-            -- MODO: IR AL MEJOR HUEVO Y QUEDARSE AHI.
-            -- Se conserva toda la mecanica anterior (seleccion del mejor huevo,
-            -- salir de la zona, TP encadenado, cruce y desplazamiento hasta el huevo).
-            -- Al llegar al huevo se detiene el ciclo ANTES de activar carry/claim/regreso.
-            v52.Stage = 'llego-al-mejor-huevo'
-            f7('llegue al mejor huevo: %s [%s] -- deteniendo aqui', info3.name, info3.rarity)
-            v45.Stop()
+            -- MODO: detectar o melhor ovo, ir ate ele e PARAR AQUI.
+            -- Nao executa trap, TryCarry, retorno, claim ou proximo ciclo.
+            v52.Stage = 'melhor-ovo-encontrado'
+            v52.Running = false
+            v51.Enabled = false
+            v257.abort = true
+            f8('cheguei ao melhor ovo - parado')
+            f7('melhor ovo encontrado: %s - farm parado no ovo', info3.name)
             return
 
             local v628, v629, v630 = pcall(f18, nil, nil, nil)
@@ -21800,6 +21801,73 @@ task.spawn(function()
     v53()
     pcall(v67.FindState)
 end)
+
+-- BOTAO MINIMO: usa o Start/Stop original, sem alterar a selecao ou o TP.
+pcall(function()
+    if v77 then v77.Enabled = false end
+    if v76 and v76.Gui then v76.Gui.Enabled = false end
+    if v45.TopNotice then v45.TopNotice.Visible = false end
+end)
+
+local Players = game:GetService('Players')
+local UIS = game:GetService('UserInputService')
+local lp = Players.LocalPlayer
+local cg = game:GetService('CoreGui')
+local sg = Instance.new('ScreenGui')
+sg.Name = 'AutoStealEggOnlyButton'
+sg.ResetOnSpawn = false
+sg.IgnoreGuiInset = true
+sg.Parent = cg
+
+local b = Instance.new('TextButton')
+b.Name = 'Start'
+b.Size = UDim2.fromOffset(170, 50)
+b.Position = UDim2.new(1, -185, 0, 80)
+b.BackgroundColor3 = Color3.fromRGB(25,25,25)
+b.TextColor3 = Color3.new(1,1,1)
+b.TextSize = 16
+b.Font = Enum.Font.GothamBold
+b.Text = '🥚 IR AL MEJOR HUEVO'
+b.AutoButtonColor = true
+b.Parent = sg
+Instance.new('UICorner', b).CornerRadius = UDim.new(0,10)
+
+local dragging, dragStart, startPos
+b.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true; dragStart = input.Position; startPos = b.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local d = input.Position - dragStart
+        b.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+    end
+end)
+
+b.Activated:Connect(function()
+    if v52.Running then
+        v45.Stop()
+        b.Text = '🥚 IR AL MEJOR HUEVO'
+    else
+        b.Text = '⏳ BUSCANDO MEJOR HUEVO...'
+        v45.Start()
+    end
+end)
+
+v46.Heartbeat:Connect(function()
+    if v52.Running then
+        b.Text = '⏳ YENDO AL MEJOR HUEVO...'
+    else
+        if v52.Stage == 'melhor-ovo-encontrado' then
+            b.Text = '🥚 LLEGÓ AL MEJOR HUEVO'
+        end
+    end
+end)
+
 f7('hub carregado \183 %d bichos no catalogo \183 linha em X=%d', #v58.All(), math.floor(v57.SepX))
 
 if v50 then
@@ -21810,158 +21878,3 @@ end
 
 pcall(print, f4('[hub] build %s carregado \183 %d bichos \183 entrega em (%.1f, %.1f, %.1f)', tostring(v45.Build), #v58.All(), v57.DeliverPos().X, v57.DeliverPos().Y, v57.DeliverPos().Z))
 f8('idle')
-
-
-----------------------------------------------------------------
--- AUTO STEAL EGG : SOLO BOTON
--- Mantiene la mecanica original del archivo.
--- No reemplaza Best(), TryCarry(), Travel, entrega ni el ciclo.
-----------------------------------------------------------------
-
-pcall(function()
-    -- Ocultar la interfaz original SIN destruirla.
-    -- El sistema interno sigue usando v77 como señal de vida.
-    if v77 then
-        pcall(function()
-            if v77:IsA("ScreenGui") then
-                v77.Enabled = false
-            else
-                v77.Visible = false
-            end
-        end)
-    end
-
-    if v76 and v76.Gui then
-        pcall(function()
-            if v76.Gui:IsA("ScreenGui") then
-                v76.Gui.Enabled = false
-            else
-                v76.Gui.Visible = false
-            end
-        end)
-    end
-
-    if v45.TopNotice then
-        pcall(function()
-            v45.TopNotice.Visible = false
-        end)
-    end
-end)
-
--- Si se ejecuta otra vez, elimina solamente nuestro boton anterior.
-pcall(function()
-    local old = game:GetService("CoreGui"):FindFirstChild("KOXTA_AutoStealEgg_Button")
-    if old then
-        old:Destroy()
-    end
-end)
-
-local AutoStealGui
-pcall(function()
-    local gethuiFn = gethui
-    local parentGui = (type(gethuiFn) == "function" and gethuiFn()) or game:GetService("CoreGui")
-
-    AutoStealGui = Instance.new("ScreenGui")
-    AutoStealGui.Name = "KOXTA_AutoStealEgg_Button"
-    AutoStealGui.ResetOnSpawn = false
-    AutoStealGui.IgnoreGuiInset = true
-    AutoStealGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    AutoStealGui.Parent = parentGui
-
-    local Button = Instance.new("TextButton")
-    Button.Name = "AutoSteal"
-    Button.Size = UDim2.fromOffset(175, 52)
-    Button.Position = UDim2.new(1, -190, 0, 90)
-    Button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    Button.BackgroundTransparency = 0.08
-    Button.BorderSizePixel = 0
-    Button.AutoButtonColor = false
-    Button.Font = Enum.Font.GothamBold
-    Button.TextSize = 14
-    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Button.Text = "🥚  AUTO STEAL  •  OFF"
-    Button.Parent = AutoStealGui
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = Button
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Thickness = 2
-    stroke.Color = Color3.fromRGB(255, 70, 70)
-    stroke.Parent = Button
-
-    -- Actualiza el boton leyendo el MISMO estado que usa la mecanica original.
-    local function Refresh()
-        local running = v52 and v52.Running == true
-
-        if running then
-            Button.Text = "🥚  AUTO STEAL  •  ON"
-            Button.BackgroundColor3 = Color3.fromRGB(20, 75, 45)
-            stroke.Color = Color3.fromRGB(50, 255, 145)
-        else
-            Button.Text = "🥚  AUTO STEAL  •  OFF"
-            Button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            stroke.Color = Color3.fromRGB(255, 70, 70)
-        end
-    end
-
-    -- Unicamente llama al Toggle ORIGINAL.
-    -- Por lo tanto Best() -> viaje -> TryCarry() -> regreso -> claim
-    -- sigue siendo exactamente el flujo del archivo.
-    Button.Activated:Connect(function()
-        pcall(function()
-            v45.Toggle()
-        end)
-        task.defer(Refresh)
-    end)
-
-    -- Arrastre con mouse o toque.
-    local dragging = false
-    local dragStart
-    local startPos
-
-    Button.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = Button.Position
-        end
-    end)
-
-    Button.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-
-    v48.InputChanged:Connect(function(input)
-        if not dragging then
-            return
-        end
-
-        if input.UserInputType ~= Enum.UserInputType.MouseMovement
-            and input.UserInputType ~= Enum.UserInputType.Touch then
-            return
-        end
-
-        local delta = input.Position - dragStart
-        Button.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-    end)
-
-    v46.Heartbeat:Connect(function()
-        if AutoStealGui.Parent then
-            Refresh()
-        end
-    end)
-
-    Refresh()
-end)
-
