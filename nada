@@ -21851,12 +21851,26 @@ do
 
     local busy = false
     button.MouseButton1Click:Connect(function()
-        if busy or v52.Running then
+        if busy then
             return
         end
 
         busy = true
         button.Text = 'KOXTA  •  EJECUTANDO...'
-        pcall(v45.Start)
+
+        -- Arranque limpio: el boton es el unico que inicia la mecanica.
+        pcall(v45.Stop)
+        v52.Running = false
+        v257.abort = false
+        v51.Enabled = true
+        v51.Blink = true
+        v51.BlinkMinDistance = 0
+
+        local ok, err = pcall(v45.Start)
+        if not ok then
+            f7('KOXTA: error al iniciar: %s', tostring(err))
+            button.Text = 'KOXTA  •  ERROR'
+            busy = false
+        end
     end)
 end
